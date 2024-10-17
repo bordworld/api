@@ -7,7 +7,7 @@ const bodyParser = require("body-parser");
 const { rateLimit } = require("express-rate-limit");
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -78,15 +78,15 @@ app.post("/mint-nft", authenticateToken, async (req, res) => {
   const { rarity, walletAddress } = req.body;
   try {
     //Check if the wallet address already has an NFT with the specified rarity
-    // const hasRarity = await nftContract.methods
-    //   .hasRarity(walletAddress, rarity)
-    //   .call();
-    // if (hasRarity) {
-    //   return res.status(400).send({
-    //     success: false,
-    //     message: "Wallet already owns an NFT with this rarity.",
-    //   });
-    // }
+    const hasRarity = await nftContract.methods
+      .hasRarity(walletAddress, rarity)
+      .call();
+    if (hasRarity) {
+      return res.status(400).send({
+        success: false,
+        message: "Wallet already owns an NFT with this rarity.",
+      });
+    }
 
     let metadataUrl = metadataRarityMappings[rarity];
     // Mint the NFT with the metadata URI
@@ -133,7 +133,6 @@ app.post("/mint-nft", authenticateToken, async (req, res) => {
 
       if (amountToSend > 0) {
         const tokenAmount = web3.utils.toBigInt(amountToSend * 10 ** 18);
-        // .mul(web3.utils.toBigInt(10).pow(web3.utils.toBigInt(tokenDecimals)));
         const tokenTx = tokenContract.methods.transfer(
           walletAddress,
           tokenAmount
@@ -145,12 +144,12 @@ app.post("/mint-nft", authenticateToken, async (req, res) => {
 
         const signedTokenTx = await web3.eth.accounts.signTransaction(
           {
-            to: tokenContractAddress, // Address of the token contract
+            to: tokenContractAddress,
             data: tokenData,
             gas: tokenGas,
             gasPrice: tokenGasPrice,
             nonce: tokenNonce,
-            chainId: process.env.CHAINID, // Sepolia or Base
+            chainId: process.env.CHAINID, //84532 - Sepolia, 8453 - Base
           },
           process.env.PRIVATE_KEY
         );
