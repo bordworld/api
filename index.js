@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const express = require("express");
 const cors = require("cors");
 const { Web3 } = require("web3");
+const { Bot, InputFile } = require("grammy");
 const bodyParser = require("body-parser");
 const { rateLimit } = require("express-rate-limit");
 
@@ -19,6 +20,9 @@ const limiter = rateLimit({
 app.use(cors());
 app.use(bodyParser.json());
 app.use(limiter);
+
+// Create an instance of the `Bot` class and pass your bot token to it.
+const tgBot = new Bot(process.env.TELEGRAM_API);
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const web3 = new Web3(
@@ -159,6 +163,17 @@ app.post("/mint-nft", authenticateToken, async (req, res) => {
         );
       }
     }
+
+    let txUrl = "https://basescan.org/tx/" + receipt.transactionHash;
+
+    await tgBot.api.sendVideo(
+      process.env.TELEGRAM_CHAT_ID,
+      new InputFile(new URL(process.env.TELEGRAM_VIDEO_URL)),
+      {
+        caption: `🚀 New Lordy Guide NFT minted!\n\n🔗 [Transaction](${txUrl})`,
+        parse_mode: "markdown",
+      }
+    );
 
     res
       .status(200)
